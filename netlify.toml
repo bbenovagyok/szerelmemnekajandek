@@ -5,11 +5,6 @@
   directory = "netlify/functions"
 
 [[redirects]]
-  from = "/meglepetesek.ics"
-  to = "/.netlify/functions/gift?ics=1"
-  status = 200
-
-[[redirects]]
   from = "/admin"
   to = "/admin.html"
   status = 200
