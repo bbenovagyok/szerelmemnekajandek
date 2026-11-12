@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="hu" data-theme="dark" style="color-scheme: dark;"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Időzített ajándék</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{--bg:#fff5f6;--card:#ffffff;--ink:#3b2230;--mut:#8a6b78;--acc:#d6456f;--soft:#ffe0e8;margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,'Times New Roman',serif}
+body[data-t=night]{--bg:#14172b;--card:#1f2340;--ink:#f3eefc;--mut:#a9a6c9;--acc:#f2b950;--soft:#2c3157}
+body[data-t=forest]{--bg:#eef5ee;--card:#ffffff;--ink:#1f3a2b;--mut:#5f7d6b;--acc:#2f8f5b;--soft:#d8ecde}
+#root{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:2rem;line-height:1.15;margin:.2em 0}
+.hero{text-align:center;padding:28px 0 10px}
+.k{letter-spacing:.14em;text-transform:uppercase;font-size:.75rem;color:var(--acc);margin:0}
+.cnt{text-align:center;color:var(--mut);margin:14px 0}
+.days{display:inline-block;margin:14px auto 0;background:var(--soft);padding:8px 18px;border-radius:999px}
+.days b{color:var(--acc);font-size:1.5rem}
+#sw{position:relative;min-height:120px}
+.sc{position:absolute;inset:0;width:100%;height:100%;border-radius:14px;touch-action:none}
+button.box.lock{border-color:var(--soft)}
+.big{font-size:1.9rem;font-weight:bold;color:var(--acc);margin:10px 0;line-height:1.25}
+.row>*{min-width:0}
+.sn{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.sn span{position:absolute;top:-30px;opacity:.75;animation:sfall linear infinite}
+@keyframes sfall{to{transform:translateY(108vh) translateX(40px) rotate(220deg)}}
+.m #sw img{display:block;max-width:100%;max-height:32vh;width:auto;margin:8px auto;object-fit:contain}
+input[type=datetime-local],input[type=date]{max-width:100%;min-width:0}
+.fx{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.fx span{position:absolute;top:-30px;animation:fall 2.8s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.3}}
+.grid{display:grid;gap:12px}
+.box{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--soft);border-radius:18px;padding:16px;font:inherit;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+button.box{cursor:pointer;border-color:var(--acc)}
+.box.lock{opacity:.75}
+.ic{font-size:1.8rem;width:48px;height:48px;display:grid;place-items:center;background:var(--soft);border-radius:14px;flex:none}
+.box small{display:block;color:var(--mut)}
+.box b{display:block}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--acc);color:#fff;padding:8px 12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;z-index:5}
+.bar button{background:#fff;color:#333;border:0;border-radius:8px;padding:6px 10px;font:inherit}
+.pin{text-align:center;padding:80px 0}
+input,textarea,select{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--soft);background:var(--card);color:var(--ink);margin:4px 0 10px}
+label{font-size:.8rem;color:var(--mut)}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:inherit;cursor:pointer}
+.btn.alt{background:var(--soft);color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--soft);border-radius:18px;padding:14px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;overflow:auto;padding:calc(20px + env(safe-area-inset-top,0px)) 16px 30px}
+#modal.on{display:block}
+.m{max-width:560px;margin:0 auto;background:var(--card);color:var(--ink);border-radius:22px;padding:22px}
+.m img{max-width:100%;border-radius:14px;margin:10px 0}
+.m p{white-space:pre-wrap}
+a.btn{display:inline-block;text-decoration:none}
+.msg{color:var(--acc);margin:8px 0}
+</style></head>
+<body data-t="rose"><div id="root"></div><div id="modal" class=""></div>
+<script id="state" type="application/json">{"ready": false, "to": "Szerelmem", "from": "Én", "title": "Meglepetések csak neked", "intro": "", "theme": "rose", "pin": "", "boxes": []}</script>
+<script>
+let S=JSON.parse(document.getElementById('state').textContent),owner=false,mode='gift',note='';
+const T={msg:['✉','Üzenet'],photo:['📷','Fotó'],song:['🎵','Dal / videó'],gift:['🎟','Program / utalvány']};
+const $=s=>document.querySelector(s),root=$('#root');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso=d=>{const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())};
+const ts=b=>{if(b.auto&&S.since){const d=new Date(S.since+'T00:00:00');if(b.auto=='half')d.setMonth(d.getMonth()+6);else if(b.auto=='100')d.setDate(d.getDate()+100);else d.setFullYear(d.getFullYear()+1);return d.getTime()}return b.at?new Date(b.at).getTime():0};
+const open=b=>ts(b)<=Date.now();
+function init(){if(S.ready)return;S.ready=true;const d=n=>{const x=new Date();x.setDate(x.getDate()+n);x.setHours(0,0,0,0);return iso(x)};
+S.boxes=[{type:'msg',title:'De jó, hogy vagy!',text:'Veled még egy hétköznapi nap is kedvenc emlék. Ma csak ennyit szeretnék mondani: de jó, hogy vagy nekem! ♥',link:'',img:'',at:''},
+{type:'gift',title:'Közös vacsora',text:'Egy estét kettesben – te választod ki a helyet.',link:'',img:'',at:d(1)},
+{type:'song',title:'A mi dalunk',text:'Ezt hallgattuk, amikor minden elkezdődött.',link:'',img:'',at:d(7)}]}
+function cd(ms){const s=Math.max(0,Math.ceil(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return 'Még '+(d?d+' nap ':'')+(d||h?h+' óra ':'')+m+' perc'+(d?'':' '+s%60+' mp')}
+function dayz(){if(!S.since)return '';const d=Math.floor((Date.now()-new Date(S.since+'T00:00:00').getTime())/864e5);return d<0?'':'<div class="days"><b>'+d+'</b> napja vagyunk együtt ♥</div>'}
+function calBtn(){return S.boxes.some(b=>!open(b))?'<p style="text-align:center"><button class="btn alt" onclick="cal()">📅 Emlékeztető a naptárba</button></p>':''}
+function cal(){if(/^https?:$/.test(location.protocol)&&!/claude/.test(location.host)){location.href='webcal://'+location.host+location.pathname.replace(/[^\/]*$/,'')+'meglepetesek.ics';return}const p=n=>String(n).padStart(2,'0'),f=s=>s.replace(/[-:]/g,'')+'00';let o='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//ajandek//HU\r\n';S.boxes.forEach((b,i)=>{if(open(b))return;const st=f(iso(new Date(ts(b)))),e=new Date(ts(b)+9e5),en=e.getFullYear()+p(e.getMonth()+1)+p(e.getDate())+'T'+p(e.getHours())+p(e.getMinutes())+'00';o+='BEGIN:VEVENT\r\nUID:aj'+i+'-'+st+'@ajandek\r\nDTSTAMP:'+st+'\r\nDTSTART:'+st+'\r\nDTEND:'+en+'\r\nSUMMARY:🎁 Kinyílt egy meglepetés!\r\nDESCRIPTION:Nyisd meg az ajándékoldalt, vár egy új doboz.\r\nURL:'+location.href+'\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Meglepetés\r\nTRIGGER:PT0M\r\nEND:VALARM\r\nEND:VEVENT\r\n'});o+='END:VCALENDAR';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o],{type:'text/calendar'}));a.download='meglepetesek.ics';document.body.appendChild(a);a.click();a.remove()}
+function view(prev){document.body.dataset.t=S.theme;mode=prev?'prev':'gift';
+let unl=false;try{unl=sessionStorage.getItem('u')==='1'}catch(e){}
+if(S.pin&&!prev&&!owner&&!unl){root.innerHTML='<div class="pin"><div style="font-size:3rem">🔐</div><h1>Add meg a kódot</h1><input id="p" inputmode="numeric" style="max-width:200px;text-align:center"><br><button class="btn" onclick="chk()">Belépés</button><p class="msg" id="pm"></p></div>';return}
+const n=S.boxes.filter(open).length;
+root.innerHTML=(prev?'<div class="bar">Előnézet – így látja ő<button onclick="ed()">← Szerkesztés</button></div>':'')+
+'<header class="hero"><p class="k">'+esc(S.from)+' ajándéka · '+esc(S.to)+'</p><h1>'+esc(S.title)+'</h1><p>'+esc(S.intro)+'</p>'+dayz()+'</header><p class="cnt">Megnyitható meglepetések <b>'+n+' / '+S.boxes.length+'</b></p>'+calBtn()+'<div class="grid">'+
+S.boxes.map((b,i)=>[b,i]).sort((x,y)=>ts(x[0])-ts(y[0])||x[1]-y[1]).map(([b,i],k)=>open(b)?'<button class="box" onclick="show('+i+')"><span class="ic">'+T[b.type][0]+'</span><span><small>'+String(k+1).padStart(2,'0')+' · MEGNYITHATÓ</small><b>'+esc(b.title)+'</b></span></button>':
+'<button class="box lock" onclick="wait('+i+')"><span class="ic">🔒</span><span><small>'+String(k+1).padStart(2,'0')+' · MEGLEPETÉS</small><b>Még titok…</b><small class="cd" data-t="'+ts(b)+'"></small></span></button>').join('')+'</div>';tick();seasonal()}
+function chk(){if($('#p').value===S.pin){try{sessionStorage.setItem('u','1')}catch(e){}view()}else $('#pm').textContent='Hibás kód'}
+function tick(){const els=document.querySelectorAll('.cd');els.forEach(e=>{const r=+e.dataset.t-Date.now();if(r<=0){view(mode==='prev')}else e.textContent=cd(r)})}
+setInterval(()=>{if(mode!=='edit')tick()},1000);
+function show(i){const b=S.boxes[i];if(!open(b))return;const L=lk(b);if(L=='riddle'&&b.q&&b.a&&!rd(b))return riddle(i);if(L=='puzzle'&&b.img&&!rd(b))return puzzle(i);const ok=/^https?:\/\//i.test(b.link||'');
+$('#modal').innerHTML='<div class="m"><p class="k">'+T[b.type][1]+'</p><h1>'+esc(b.title)+'</h1><div id="sw">'+(b.img?'<img src="'+b.img+'" alt="">':'')+'<p id="tw" onclick="skip()">'+(sc(b)?'':esc(b.text))+'</p></div>'+(ok?'<a class="btn" target="_blank" rel="noopener" href="'+esc(b.link)+'">Megnyitás ↗</a> ':'')+'<button class="btn alt" onclick="closeM()">Bezár</button></div>';$('#modal').className='on';cur=b.text;if(!sc(b)){const im=$('#sw img');if(im&&!im.complete)im.onload=()=>scratch(i);else setTimeout(()=>scratch(i),50)}else{burst();typeIt(b.text)}}
+let tt,cur='';const sc=b=>{try{return localStorage.getItem('sc:'+b.title)}catch(e){}};
+function burst(){const c=document.createElement('div');c.className='fx';for(let i=0;i<46;i++){const s=document.createElement('span');s.textContent=['♥','💖','✨','🎉','💗'][i%5];s.style.cssText='left:'+Math.random()*100+'%;animation-delay:'+Math.random()*.6+'s;font-size:'+(14+Math.random()*18)+'px';c.appendChild(s)}document.body.appendChild(c);setTimeout(()=>c.remove(),3600)}
+function typeIt(t){clearInterval(tt);const e=$('#tw'),a=[...t];let k=0;tt=setInterval(()=>{e.textContent=a.slice(0,++k).join('');if(k>=a.length)clearInterval(tt)},28)}
+function skip(){clearInterval(tt);const e=$('#tw');if(e&&!$('.sc'))e.textContent=cur}
+function scratch(i){const w=$('#sw');if(!w||$('.sc'))return;const c=document.createElement('canvas'),r=w.getBoundingClientRect();c.className='sc';c.width=r.width;c.height=r.height;w.appendChild(c);const x=c.getContext('2d'),g=x.createLinearGradient(0,0,c.width,c.height);g.addColorStop(0,'#c9b27c');g.addColorStop(.5,'#f1e4b6');g.addColorStop(1,'#b89c5b');x.fillStyle=g;x.fillRect(0,0,c.width,c.height);x.fillStyle='#6b5726';x.font='17px Georgia';x.textAlign='center';x.fillText('Kapard le az ujjaddal ✨',c.width/2,c.height/2);x.globalCompositeOperation='destination-out';let d=0,n=0;const m=e=>{if(!d)return;const p=c.getBoundingClientRect();x.beginPath();x.arc(e.clientX-p.left,e.clientY-p.top,24,0,7);x.fill();if(++n%10==0){const a=x.getImageData(0,0,c.width,c.height).data;let z=0,t=0;for(let k=3;k<a.length;k+=80){t++;if(!a[k])z++}if(z/t>.5){c.remove();try{localStorage.setItem('sc:'+S.boxes[i].title,'1')}catch(e){}burst()}}};c.onpointerdown=e=>{d=1;c.setPointerCapture(e.pointerId);m(e)};c.onpointermove=m;c.onpointerup=()=>d=0}
+function wait(i){const b=S.boxes[i];$('#modal').innerHTML='<div class="m" style="text-align:center"><div style="font-size:3rem">🔒</div><h1>Ezt még nem tudod kinyitni, ne légy tülelmetlen 🤣</h1><p class="big cd2" data-t="'+ts(b)+'"></p><p class="k">Nyílik: '+new Date(ts(b)).toLocaleString('hu-HU',{dateStyle:'long',timeStyle:'short'})+'</p><button class="btn alt" onclick="closeM()">Jó van, várok 😇</button></div>';$('#modal').className='on';clearInterval(tt);const e=$('.cd2'),f=()=>{const r=+e.dataset.t-Date.now();if(r<=0){clearInterval(tt);closeM();view(mode==='prev');return}const s=Math.ceil(r/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);e.textContent=(d?d+' nap ':'')+h+' óra '+m+' perc '+s%60+' mp'};f();tt=setInterval(f,1000)}
+const nz=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,''),rd=b=>{try{return localStorage.getItem('rd:'+b.title)}catch(e){}};
+function riddle(i){const b=S.boxes[i];$('#modal').innerHTML='<div class="m" style="text-align:center"><div style="font-size:3rem">🧩</div><p class="k">Először egy kérdés</p><h1>'+esc(b.q)+'</h1><input id="ra" autocomplete="off" style="text-align:center" onkeydown="if(event.keyCode==13)ans('+i+')"><p class="msg" id="rm"></p><button class="btn" onclick="ans('+i+')">Ellenőrzés</button> <button class="btn alt" onclick="closeM()">Később</button></div>';$('#modal').className='on';setTimeout(()=>{const e=$('#ra');if(e)e.focus()},60)}
+function ans(i){const b=S.boxes[i],v=nz($('#ra').value);if(v&&b.a.split(/[;,]/).some(x=>nz(x)==v)){try{localStorage.setItem('rd:'+b.title,'1')}catch(e){}show(i)}else $('#rm').textContent='Hmm, nem egészen… próbáld újra 😏'}
+function dup(){const m={};S.boxes.forEach((b,i)=>{const t=ts(b);if(!t)return;const k=new Date(t).toLocaleDateString('hu-HU',{dateStyle:'long'});(m[k]=m[k]||[]).push(String(i+1).padStart(2,'0')+'.')});return Object.keys(m).filter(k=>m[k].length>1).map(k=>'⚠️ Ugyanarra a napra ('+k+') van beállítva: '+m[k].join(' és ')+' meglepetés').join('<br>')}
+function srt(){S.boxes.sort((a,b)=>ts(a)-ts(b));ed()}
+function dw(){const d=dup();return d?'<div class="card" style="border-color:var(--acc)">'+d+'</div>':''}
+function upd(){const e=$('#dw');if(e)e.innerHTML=dw()}
+const pz=n=>String(n).padStart(2,'0'),pd=v=>{const m=(v||'').match(/^(\d+)-(\d+)-(\d+)T(\d+):(\d+)/);return m?m.slice(1).map(Number):null};
+function dt(i,v){const p=pd(v)||[0,0,0,0,0],Y=new Date().getFullYear(),sel=(k,lo,hi,lab,f)=>{let o='<option value="">'+lab+'</option>';for(let x=lo;x<=hi;x++)o+='<option value="'+x+'"'+(p[k]===x?' selected':'')+'>'+(f?f(x):pz(x))+'</option>';return '<select style="width:auto;margin:2px" onchange="sdt('+i+','+k+',this.value)">'+o+'</select>'};return '<div style="display:flex;flex-wrap:wrap;margin-bottom:8px">'+sel(0,Y,Y+3,'év',x=>x)+sel(1,1,12,'hó')+sel(2,1,31,'nap')+sel(3,0,23,'óra')+sel(4,0,59,'perc')+'</div>'}
+function sdt(i,k,v){const b=S.boxes[i];if(v===''){b.at='';ed();return}const p=pd(b.at)||[new Date().getFullYear(),1,1,0,0];p[k]=+v;p[2]=Math.min(p[2],new Date(p[0],p[1],0).getDate());b.at=p[0]+'-'+pz(p[1])+'-'+pz(p[2])+'T'+pz(p[3])+':'+pz(p[4]);ed()}
+function snow(ch,ms){const o=$('.sn');if(o)o.remove();const c=document.createElement('div');c.className='sn';for(let i=0;i<30;i++){const s=document.createElement('span');s.textContent=ch;s.style.cssText='left:'+Math.random()*100+'%;font-size:'+(10+Math.random()*16)+'px;animation-duration:'+(7+Math.random()*8)+'s;animation-delay:-'+Math.random()*12+'s;color:'+(ch=='♥'?'#e8557a':'#9cc9ee');c.appendChild(s)}document.body.appendChild(c);if(ms)setTimeout(()=>c.remove(),ms)}
+function seasonal(){if(S.fx===false||$('.sn'))return;const d=new Date(),m=d.getMonth()+1,n=d.getDate();if(m==12&&n<=26)snow('❄');else if(m==2&&n>=7&&n<=14)snow('♥')}
+const lk=b=>b.lock!==undefined?b.lock:(b.q&&b.a?'riddle':'');
+let pq=null;
+function puzzle(i){const b=S.boxes[i],im=new Image();im.onload=()=>{const o=[...Array(9).keys()];do{o.sort(()=>Math.random()-.5)}while(o.every((v,k)=>v==k));pq={i,o,s:-1,r:im.width/im.height};drawP()};im.src=b.img}
+function drawP(){const b=S.boxes[pq.i],o=pq.o,s=pq.s,r=pq.r;$('#modal').innerHTML='<div class="m" style="text-align:center"><div style="font-size:2.4rem">🧩</div><h1>Told ki a kirakót</h1><p class="k">Koppints két darabra, hogy cseréljenek</p><div style="--img:url('+b.img+');display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:12px auto;width:min(100%,'+(34*r).toFixed(1)+'vh);aspect-ratio:'+r+'">'+o.map((v,k)=>'<div onclick="pt('+k+')" style="background-image:var(--img);background-size:300% 300%;background-position:'+(v%3*50)+'% '+(Math.floor(v/3)*50)+'%;border-radius:4px;'+(k==s?'outline:3px solid var(--acc);':'')+'"></div>').join('')+'</div><button class="btn alt" onclick="closeM()">Később</button></div>';$('#modal').className='on'}
+function pt(k){if(pq.s<0)pq.s=k;else{const o=pq.o,s=pq.s;[o[k],o[s]]=[o[s],o[k]];pq.s=-1;if(o.every((v,x)=>v==x)){try{localStorage.setItem('rd:'+S.boxes[pq.i].title,'1')}catch(e){}const i=pq.i;pq=null;burst();setTimeout(()=>show(i),900);return}}drawP()}
+function closeM(){clearInterval(tt);$('#modal').className='';$('#modal').innerHTML=''}
+function ed(){mode='edit';document.body.dataset.t=S.theme;
+root.innerHTML='<h1>Ajándékoldal szerkesztése</h1><div id="dw">'+dw()+'</div><div class="card"><label>Kinek?</label><input value="'+esc(S.to)+'" oninput="S.to=this.value"><label>Ki ad ajándékot?</label><input value="'+esc(S.from)+'" oninput="S.from=this.value"><label>Cím</label><input value="'+esc(S.title)+'" oninput="S.title=this.value"><label>Bevezető szöveg</label><textarea rows="2" oninput="S.intro=this.value">'+esc(S.intro)+'</textarea><label style="display:block;margin:6px 0"><input type="checkbox" style="width:auto;margin:0 8px 0 0" '+(S.fx===false?'':'checked')+' onchange="S.fx=this.checked"> Ünnepi effektek (karácsony: hóesés, Valentin-nap: szívek)</label><div class="row" style="margin-bottom:10px"><button class="btn alt" onclick="snow(String.fromCharCode(10052),5000)">❄ Hóesés próba</button><button class="btn alt" onclick="snow(String.fromCharCode(9829),5000)">♥ Szív próba</button></div><label>Mióta vagytok együtt? (nem kötelező)</label><input type="date" value="'+esc(S.since||'')+'" onchange="S.since=this.value"><div class="row"><div><label>Téma</label><select onchange="S.theme=this.value;document.body.dataset.t=this.value">'+[['rose','Rózsa'],['night','Éjkék'],['forest','Erdő']].map(t=>'<option value="'+t[0]+'"'+(S.theme==t[0]?' selected':'')+'>'+t[1]+'</option>').join('')+'</select></div><div><label>PIN (nem kötelező)</label><input value="'+esc(S.pin)+'" inputmode="numeric" oninput="S.pin=this.value"></div></div></div>'+
+S.boxes.map((b,i)=>'<div class="card"><b>'+String(i+1).padStart(2,'0')+'. meglepetés</b><div class="row"><div><label>Típus</label><select onchange="S.boxes['+i+'].type=this.value">'+Object.keys(T).map(k=>'<option value="'+k+'"'+(b.type==k?' selected':'')+'>'+T[k][0]+' '+T[k][1]+'</option>').join('')+'</select></div><div><label>'+(b.auto&&S.since?'Nyitás időpontja':'Mikor nyíljon? (üres = azonnal)')+'</label>'+(b.auto&&S.since?'<p class="msg">Automatikus: '+new Date(ts(b)).toLocaleDateString('hu-HU',{dateStyle:'long'})+', éjfélkor</p>':'<div>'+dt(i,b.at)+'</div>')+'</div></div><label>Automatikus nyitás (felülírja az időpontot)</label><select onchange="S.boxes['+i+'].auto=this.value;ed()"><option value="">Nincs</option><option value="half"'+(b.auto=='half'?' selected':'')+'>Fél év évfordulón</option><option value="year"'+(b.auto=='year'?' selected':'')+'>1 év évfordulón</option></select><label>Zár a doboz előtt</label><select onchange="S.boxes['+i+'].lock=this.value;ed()"><option value="">Nincs</option><option value="riddle"'+(lk(b)=='riddle'?' selected':'')+'>Rejtvény (kérdés és válasz)</option><option value="puzzle"'+(lk(b)=='puzzle'?' selected':'')+'>Kirakós (a doboz fotójából)</option></select>'+(lk(b)=='puzzle'&&!b.img?'<p class="msg">A kirakóhoz tölts fel egy fotót ehhez a dobozhoz!</p>':'')+(lk(b)=='riddle'?'':'<div style="display:none">')+'<label>Rejtvény (kérdés)</label><input value="'+esc(b.q)+'" placeholder="Pl.: Hol csalódtunk el először?" oninput="S.boxes['+i+'].q=this.value"><label>Helyes válasz</label><input value="'+esc(b.a)+'" oninput="S.boxes['+i+'].a=this.value">'+(lk(b)=='riddle'?'':'</div>')+'<label>Cím</label><input value="'+esc(b.title)+'" oninput="S.boxes['+i+'].title=this.value"><label>Üzenet</label><textarea rows="3" oninput="S.boxes['+i+'].text=this.value">'+esc(b.text)+'</textarea><label>Link (Spotify, YouTube, jegy…)</label><input value="'+esc(b.link)+'" placeholder="https://" oninput="S.boxes['+i+'].link=this.value"><label>Fotó</label><input type="file" accept="image/*" onchange="pick('+i+',this.files[0])">'+(b.img?'<img src="'+b.img+'" style="max-width:120px;border-radius:10px"><br><button class="btn alt" onclick="S.boxes['+i+'].img=\'\';ed()">Fotó törlése</button> ':'')+'<button class="btn alt" onclick="S.boxes.splice('+i+',1);ed()">Doboz törlése</button></div>').join('')+
+'<div class="row"><button class="btn alt" onclick="S.boxes.push({type:\'msg\',title:\'Új meglepetés\',text:\'\',link:\'\',img:\'\',at:\'\'});ed()">＋ Új doboz</button><button class="btn alt" onclick="srt()">↕ Időrendbe</button><button class="btn alt" onclick="view(true)">👀 Előnézet</button></div><p><button class="btn" id="sv" onclick="save()">Mentés</button></p><p class="msg">'+esc(note)+'</p><p style="color:var(--mut);font-size:.85rem">Mentés után az ajándékoldal azonnal frissül, nem kell semmit feltölteni. A PIN csak könnyű védelem.</p>';note=''}
+function pick(i,f){if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.boxes[i].img=c.toDataURL('image/jpeg',.8);ed()};im.src=r.result};r.readAsDataURL(f)}
+function snap(){const d=document.documentElement.cloneNode(true);d.querySelector('#root').innerHTML='';d.querySelector('#modal').innerHTML='';d.querySelector('#modal').className='';d.querySelector('body').setAttribute('data-t',S.theme);d.querySelector('#state').textContent=JSON.stringify(S).replace(/</g,'\\u003c');return '<!doctype html>\n'+d.outerHTML}
+async function save(){let pw=sessionStorage.getItem('pw')||prompt('Szerkesztői jelszó:');if(!pw)return;try{const r=await fetch('/.netlify/functions/save',{method:'POST',headers:{'content-type':'application/json','x-admin-password':pw},body:JSON.stringify(S)});if(r.status==401){sessionStorage.removeItem('pw');note='Hibás jelszó.';ed();return}if(!r.ok)throw new Error('hiba '+r.status);sessionStorage.setItem('pw',pw);note='✅ Elmentve! Az ajándékoldal azonnal frissült.';ed()}catch(e){note='Nem sikerült a mentés: '+(e.message||'hiba');ed()}}
+const ADMIN=/admin/.test(location.pathname);
+(async()=>{root.innerHTML='<p style="text-align:center;padding:80px 0">Betöltés…</p>';
+try{const r=await fetch('/.netlify/functions/gift',{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.boxes)S=d}}catch(e){}
+if(!S.boxes.length){try{const r=await fetch('/seed.json');if(r.ok){const d=await r.json();if(d&&d.boxes)S=d}}catch(e){}}
+init();
+if(ADMIN){owner=true;srt()}else view()})();
+</script>
+</body></html>
