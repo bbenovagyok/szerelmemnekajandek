@@ -8,6 +8,7 @@ export default async (req) => {
   }
   let d;
   try { d = await req.json(); } catch (e) { return new Response("Bad request", { status: 400 }); }
+  if (d && d.check) return new Response("ok");
   if (!d || !Array.isArray(d.boxes)) return new Response("Bad request", { status: 400 });
   await getStore("gift").setJSON("data", d);
   return new Response("ok");
